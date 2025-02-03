@@ -14,7 +14,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { logout, selectUser } from "../../features/auth/authSlice";
 import Cookies from "js-cookie";
 import { useNavigate } from "react-router";
-import TaskStatistics from "../../components/user/TaskStatistics";
+import TaskStatistics2 from "../../components/user/TaskStatistics2";
 
 const Dashboard = () => {
   const [tasks, setTasks] = useState([]);
@@ -56,8 +56,7 @@ const Dashboard = () => {
       console.error("Error fetching tasks:", error);
       Swal.fire("Error!", "Failed to fetch tasks.", "error");
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId, page, limit, search, sort, filters]);
+  }, [userId, page, limit, debouncedSearch, sort, filters]);
 
   useEffect(() => {
     fetchTasks();
@@ -80,12 +79,11 @@ const Dashboard = () => {
     const handleTaskAdded = (newTask) => {
       if (newTask.userId === userId) {
         setTasks((prevTasks) => {
-          // Avoid duplicate tasks
           if (prevTasks.find((task) => task._id === newTask._id))
             return prevTasks;
           return [...prevTasks, newTask];
         });
-        fetchStatistics(); // Fetch only if the task is relevant to the user
+        fetchStatistics();
       }
     };
 
@@ -107,12 +105,10 @@ const Dashboard = () => {
       fetchStatistics();
     };
 
-    // Register WebSocket events
     socket.on("taskAdded", handleTaskAdded);
     socket.on("taskUpdated", handleTaskUpdated);
     socket.on("taskDeleted", handleTaskDeleted);
 
-    // Cleanup all WebSocket events
     return () => {
       socket.off("taskAdded", handleTaskAdded);
       socket.off("taskUpdated", handleTaskUpdated);
@@ -164,6 +160,7 @@ const Dashboard = () => {
         Swal.fire("Success!", "Task added successfully!", "success");
       }
       closeModal();
+      fetchTasks();
     } catch (error) {
       console.error("Error saving task:", error);
       const errorMessage =
@@ -185,7 +182,7 @@ const Dashboard = () => {
       if (result.isConfirmed) {
         try {
           await deleteTask(taskId);
-          setTasks(tasks.filter((task) => task._id !== taskId));
+          fetchTasks();
           Swal.fire("Deleted!", "Your task has been deleted.", "success");
           fetchStatistics();
         } catch (error) {
@@ -198,22 +195,21 @@ const Dashboard = () => {
     });
   };
 
-  // Debounce the search input
   useEffect(() => {
     const debounceTimer = setTimeout(() => {
-      setDebouncedSearch(search); // Update the debounced search value after a delay
+      setDebouncedSearch(search);
     }, 300);
 
     return () => {
-      clearTimeout(debounceTimer); // Cleanup the timer
+      clearTimeout(debounceTimer);
     };
-  }, [search]); // Run only when `search` changes
+  }, [search]);
 
-  // Handle search input changes
   const handleSearch = (e) => {
-    setSearch(e.target.value); // Update the search input state
-    setPage(1); // Reset to the first page
+    setSearch(e.target.value);
+    setPage(1);
   };
+
   const handleSortChange = (e) => {
     setSort(e.target.value);
     setPage(1);
@@ -271,13 +267,6 @@ const Dashboard = () => {
               </p>
             </div>
             <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
-              <input
-                type="text"
-                placeholder="Search tasks..."
-                value={search}
-                onChange={handleSearch}
-                className="border border-gray-300 rounded-md px-4 py-2 w-full sm:w-auto"
-              />
               <button
                 onClick={() => openModal()}
                 className="flex items-center px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors w-full sm:w-auto"
@@ -294,177 +283,151 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Filters and Sorting */}
-        <div className="flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center gap-2 mb-4">
-          <select
-            value={sort}
-            onChange={handleSortChange}
-            className="w-full sm:w-auto border border-gray-300 rounded-md px-4 py-2"
-          >
-            <option value="dueDate:asc">Due Date (Asc)</option>
-            <option value="dueDate:desc">Due Date (Desc)</option>
-            <option value="priority:asc">Priority (Asc)</option>
-            <option value="priority:desc">Priority (Desc)</option>
-          </select>
-
-          <select
-            name="priority"
-            value={filters.priority}
-            onChange={handleFilterChange}
-            className="w-full sm:w-auto border border-gray-300 rounded-md px-4 py-2"
-          >
-            <option value="">All Priorities</option>
-            <option value="Low">Low</option>
-            <option value="Medium">Medium</option>
-            <option value="High">High</option>
-          </select>
-
-          <select
-            name="status"
-            value={filters.status}
-            onChange={handleFilterChange}
-            className="w-full sm:w-auto border border-gray-300 rounded-md px-4 py-2"
-          >
-            <option value="">All Status</option>
-            <option value="Pending">Pending</option>
-            <option value="In Progress">In Progress</option>
-            <option value="Completed">Completed</option>
-          </select>
+        {/* Task Statistics */}
+        <div className="bg-white shadow-sm rounded-lg p-6 mb-6">
+          <h2 className="text-xl font-semibold mb-4">Task Statistics</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <TaskStatistics2 statistics={statistics} />
+          </div>
         </div>
 
-        {/* Dashboard Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Task Statistics */}
-          <div className="lg:col-span-1">
-            <TaskStatistics statistics={statistics} />
+        {/* Recent Tasks */}
+        <div className="bg-white shadow-sm rounded-lg p-6">
+          <h2 className="text-xl font-semibold mb-6">Recent Tasks</h2>
+
+          {/* Search and Filters */}
+          <div className="mb-6">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-4">
+              <input
+                type="text"
+                placeholder="Search tasks..."
+                value={search}
+                onChange={handleSearch}
+                className="border border-gray-300 rounded-md px-4 py-2 w-full sm:w-64"
+              />
+              <select
+                value={sort}
+                onChange={handleSortChange}
+                className="border border-gray-300 rounded-md px-4 py-2 w-full sm:w-auto"
+              >
+                <option value="dueDate:asc">Due Date (Asc)</option>
+                <option value="dueDate:desc">Due Date (Desc)</option>
+                <option value="priority:asc">Priority (Asc)</option>
+                <option value="priority:desc">Priority (Desc)</option>
+              </select>
+            </div>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+              <select
+                name="priority"
+                value={filters.priority}
+                onChange={handleFilterChange}
+                className="border border-gray-300 rounded-md px-4 py-2 w-full sm:w-auto"
+              >
+                <option value="">All Priorities</option>
+                <option value="Low">Low</option>
+                <option value="Medium">Medium</option>
+                <option value="High">High</option>
+              </select>
+              <select
+                name="status"
+                value={filters.status}
+                onChange={handleFilterChange}
+                className="border border-gray-300 rounded-md px-4 py-2 w-full sm:w-auto"
+              >
+                <option value="">All Status</option>
+                <option value="Pending">Pending</option>
+                <option value="In Progress">In Progress</option>
+                <option value="Completed">Completed</option>
+              </select>
+            </div>
           </div>
 
-          {/* Recent Tasks */}
-          <div className="lg:col-span-2 bg-white shadow-sm rounded-lg p-6">
-            <h2 className="text-xl font-semibold mb-6">Recent Tasks</h2>
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      #
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      Title
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      Status
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      Priority
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      Due Date
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {tasks.length > 0 ? (
-                    tasks.map((task, index) => (
-                      <tr key={task._id}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {(page - 1) * limit + index + 1}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          {task.title}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span
-                            className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(
-                              task.status
-                            )}`}
-                          >
-                            {task.status}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span
-                            className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getPriorityColor(
-                              task.priority
-                            )}`}
-                          >
-                            {task.priority}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {new Date(task.dueDate).toLocaleDateString()}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          <button
-                            onClick={() => openModal(task)}
-                            className="text-indigo-600 hover:text-indigo-900 mr-2"
-                          >
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => confirmDeleteTask(task._id)}
-                            className="text-red-600 hover:text-red-900"
-                          >
-                            Delete
-                          </button>
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td
-                        colSpan="6"
-                        className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center"
+          {/* Task List */}
+          <div className="overflow-hidden">
+            <div className="grid grid-cols-1 gap-4">
+              {tasks.length > 0 ? (
+                tasks.map((task, index) => (
+                  <div
+                    key={task._id}
+                    className="bg-white p-4 rounded-lg shadow"
+                  >
+                    <div className="flex justify-between items-center mb-2">
+                      <h3 className="text-lg font-semibold">{task.title}</h3>
+                      <span className="text-sm text-gray-500">
+                        #{(page - 1) * limit + index + 1}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 mb-2">
+                      <div>
+                        <span className="text-sm font-medium text-gray-500">
+                          Status:
+                        </span>
+                        <span
+                          className={`ml-2 px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(
+                            task.status
+                          )}`}
+                        >
+                          {task.status}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-sm font-medium text-gray-500">
+                          Priority:
+                        </span>
+                        <span
+                          className={`ml-2 px-2 py-1 text-xs font-semibold rounded-full ${getPriorityColor(
+                            task.priority
+                          )}`}
+                        >
+                          {task.priority}
+                        </span>
+                      </div>
+                    </div>
+                    <p className="text-sm text-gray-600 mb-2">
+                      Due: {new Date(task.dueDate).toLocaleDateString()}
+                    </p>
+                    <div className="flex justify-end space-x-2">
+                      <button
+                        onClick={() => openModal(task)}
+                        className="text-indigo-600 hover:text-indigo-900"
                       >
-                        No tasks available. Click &quot;Create Task&quot; to add
-                        one.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => confirmDeleteTask(task._id)}
+                        className="text-red-600 hover:text-red-900"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-4 text-gray-500">
+                  No tasks available. Click &quot;Create Task&quot; to add one.
+                </div>
+              )}
             </div>
-            {/* Pagination */}
-            <div className="flex justify-between items-center mt-6">
-              <button
-                disabled={page === 1}
-                onClick={() => changePage(page - 1)}
-                className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Previous
-              </button>
-              <span>
-                Page {page} of {totalPages}
-              </span>
-              <button
-                disabled={page === totalPages}
-                onClick={() => changePage(page + 1)}
-                className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Next
-              </button>
-            </div>
+          </div>
+          {/* Pagination */}
+          <div className="flex justify-between items-center mt-6">
+            <button
+              disabled={page === 1}
+              onClick={() => changePage(page - 1)}
+              className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Previous
+            </button>
+            <span>
+              Page {page} of {totalPages}
+            </span>
+            <button
+              disabled={page === totalPages}
+              onClick={() => changePage(page + 1)}
+              className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Next
+            </button>
           </div>
         </div>
 
