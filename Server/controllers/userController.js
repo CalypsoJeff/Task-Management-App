@@ -1,5 +1,5 @@
 const bcrypt = require("bcrypt");
-const User = require("../models/UserModel");
+const User = require("../models/userModel");
 const { generateToken } = require("../helper/jwtHelper");
 const { generateOTP, sendOtp } = require("../utility/nodeMailer");
 // Register User and Send OTP
