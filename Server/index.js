@@ -36,11 +36,23 @@ app.use((req, res, next) => {
 });
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+// app.use(
+//   session({
+//     secret: process.env.SECRET,
+//     resave: true,
+//     saveUninitialized: true,
+//   })
+// );
 app.use(
   session({
     secret: process.env.SECRET,
-    resave: true,
-    saveUninitialized: true,
+    resave: false,
+    saveUninitialized: false,
+    store: MongoStore.create({
+      mongoUrl: process.env.MONGO_URL,
+      ttl: 3600, // 1 hour expiration time
+    }),
+    cookie: { secure: false, maxAge: 3600000 }, // Adjust as needed
   })
 );
 app.options("*", cors());

@@ -56,6 +56,8 @@ const verifyOtpAndRegister = async (req, res) => {
     }
     // Check if OTP exists in session
     const sessionData = req.session.otpUser;
+    console.log("Session Data:", sessionData);
+    
     if (!sessionData) {
       return res
         .status(400)
