@@ -19,7 +19,14 @@ export default function RegisterPage() {
     try {
       const response = await registerUser(data);
       console.log(response.data);
-      navigate("/otp");
+      navigate("/otp", {
+        state: {
+          email: data.email,
+          phone: data.phone,
+          name: data.name,
+          password: data.password,
+        },
+      });
     } catch (error) {
       console.error("Error during registration:", error);
     } finally {

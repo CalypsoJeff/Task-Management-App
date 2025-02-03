@@ -1,5 +1,6 @@
 const bcrypt = require("bcrypt");
 const User = require("../models/userModel");
+const otp = require("../models/otpModel");
 const { generateToken } = require("../helper/jwtHelper");
 const { generateOTP, sendOtp } = require("../utility/nodeMailer");
 // Register User and Send OTP
@@ -30,7 +31,10 @@ const registerUser = async (req, res) => {
       // Generate OTP
       const otpSaved = generateOTP();
       console.log("Generated OTP:", otpSaved);
-      req.session.otpUser = { ...UserData, otpSaved };
+      // req.session.otpUser = { ...UserData, otpSaved };
+      const savedOtp = await new otp({ otpSaved, email }).save();
+      console.log("Saved OTP:", savedOtp);
+
       /***** otp sending ******/
       sendOtp(email, otpSaved, name);
       res.status(200).json({
@@ -49,34 +53,47 @@ const registerUser = async (req, res) => {
 // Verify OTP and Register User
 const verifyOtpAndRegister = async (req, res) => {
   try {
-    const { otp } = req.body;
-    // Validate OTP
-    if (!otp) {
-      return res.status(400).json({ error: "OTP is required." });
-    }
-    // Check if OTP exists in session
-    const sessionData = req.session.otpUser;
-    console.log("Session Data:", sessionData);
+    const { otp, email } = req.body;
+    console.log(req.body,"req.body");
     
-    if (!sessionData) {
-      return res
-        .status(400)
-        .json({ error: "OTP expired. Please register again." });
+
+    // Validate input
+    if (!otp || !email) {
+      return res.status(400).json({ error: "OTP and email are required." });
     }
-    const { name, email, phone, password, otpSaved } = sessionData;
-    if (otpSaved != otp) {
+
+    // Check if OTP exists in the database for the given email
+    const otpRecord = await otp.findOne({ email });
+
+    if (!otpRecord) {
+      return res.status(400).json({ error: "OTP expired or not found." });
+    }
+
+    // Compare the provided OTP with the stored OTP
+    if (otpRecord.otp !== otp) {
       return res.status(400).json({ error: "Invalid OTP. Please try again." });
     }
+
+    // OTP is valid, proceed with registration
+    const { name, phone, password } = req.body; // Ensure these are sent in the request body
+
     const hashedPassword = await bcrypt.hash(password, 10);
+
     const newUser = new User({
       name,
       email,
       phone,
       password: hashedPassword,
     });
+
     await newUser.save();
+
+    // Generate tokens
     const { token, refreshToken } = generateToken(name, email, "user");
-    req.session.otpUser = null;
+
+    // Delete OTP record after successful verification
+    await otp.deleteOne({ email });
+
     res.status(201).json({
       message: "Registration successful! Redirecting to home page.",
       token,
@@ -116,15 +133,13 @@ const login = async (req, res) => {
     const role = "user";
     const { token, refreshToken } = generateToken(user.name, user.email, role);
     const { password: _, ...userWithoutPassword } = user._doc;
-    res
-      .status(200)
-      .json({
-        status: "success",
-        message: "Login successful!",
-        userWithoutPassword,
-        token,
-        refreshToken,
-      });
+    res.status(200).json({
+      status: "success",
+      message: "Login successful!",
+      userWithoutPassword,
+      token,
+      refreshToken,
+    });
   } catch (error) {
     console.error("Error during login:", error);
     res.status(500).json({

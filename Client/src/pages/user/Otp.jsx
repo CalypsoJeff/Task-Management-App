@@ -6,11 +6,16 @@ import "react-toastify/ReactToastify.css";
 import {useDispatch} from 'react-redux'
 import { login } from "../../features/auth/authSlice";
 
+
 const Otp = () => {
   const [otp, setOtp] = useState(["", "", "", ""]);
   const navigate = useNavigate();
   const inputRefs = [useRef(), useRef(), useRef(), useRef()];
   const dispatch = useDispatch();
+  const email = navigate.location.state.email;
+  const phone = navigate.location.state.phone;
+  const name = navigate.location.state.name;
+  const password = navigate.location.state.password;
 
   const handleChange = (index, value) => {
     if (isNaN(value)) return;
@@ -33,7 +38,7 @@ const Otp = () => {
 
   const handleVerify = async () => {
     const otpValue = otp.join("");
-    const otpData = { otp: otpValue };
+    const otpData = { otp: otpValue, email, phone, name, password };
 
     try {
       const response = await otpVerification(otpData);
