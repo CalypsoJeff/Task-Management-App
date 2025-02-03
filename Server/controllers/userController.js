@@ -98,8 +98,6 @@ const login = async (req, res) => {
         .status(400)
         .json({ error: "Email and Password are required." });
     }
-
-    // Check if the user exists
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(400).json({ error: "Invalid email or password." });

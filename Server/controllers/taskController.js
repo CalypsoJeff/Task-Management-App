@@ -93,6 +93,7 @@ const createTask = async (req, res) => {
       dueDate,
       userId,
     });
+    req.io.emit("taskAdded", task);
     res
       .status(201)
       .json({ success: true, message: "Task created successfully", task });
@@ -149,6 +150,9 @@ const updateTask = async (req, res) => {
         .json({ success: false, message: "Task not found" });
     }
 
+    // Emit event for real-time updates
+    req.io.emit("taskUpdated", updatedTask);
+
     res.status(200).json({ success: true, task: updatedTask });
   } catch (error) {
     console.error("Error updating task:", error);
@@ -166,6 +170,9 @@ const deleteTask = async (req, res) => {
         message: "Task not found",
       });
     }
+    // Emit event for real-time updates
+    req.io.emit("taskDeleted", taskId);
+
     return res.status(200).json({
       success: true,
       message: "Task deleted successfully",
@@ -182,28 +189,18 @@ const deleteTask = async (req, res) => {
 const getTaskStatistics = async (req, res) => {
   try {
     const { id: userId } = req.params;
-
-    console.log("User ID:", userId);
-
     // Convert userId to ObjectId using `new`
     const objectId = new mongoose.Types.ObjectId(userId);
-
     // Fetch aggregated statistics
     const statistics = await Task.aggregate([
       { $match: { userId: objectId } }, // Match tasks for the specific user
       { $group: { _id: "$status", count: { $sum: 1 } } }, // Group by status
     ]);
-
-    console.log("Raw Aggregation Results:", statistics);
-
     // Format statistics for frontend
     const formattedStats = statistics.map((stat) => ({
       name: stat._id,
       count: stat.count,
     }));
-
-    console.log("Formatted Stats:", formattedStats);
-
     res.status(200).json({ success: true, statistics: formattedStats });
   } catch (error) {
     console.error("Error fetching task statistics:", error);
