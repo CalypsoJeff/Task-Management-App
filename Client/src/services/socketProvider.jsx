@@ -1,6 +1,6 @@
 import { io } from "socket.io-client";
 
-const socket = io("http://localhost:4848", {
+const socket = io("https://task-management-app-beryl-theta.vercel.app", {
   withCredentials: true,
 });
 
