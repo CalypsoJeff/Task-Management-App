@@ -1,6 +1,6 @@
 const bcrypt = require("bcrypt");
 const User = require("../models/userModel");
-const otp = require("../models/otpModel");
+const   OTP = require("../models/otpModel");
 const { generateToken } = require("../helper/jwtHelper");
 const { generateOTP, sendOtp } = require("../utility/nodeMailer");
 // Register User and Send OTP
@@ -32,7 +32,7 @@ const registerUser = async (req, res) => {
       const otpSaved = generateOTP();
       console.log("Generated OTP:", otpSaved);
       // req.session.otpUser = { ...UserData, otpSaved };
-      const savedOtp = await new otp({ otp: otpSaved, email }).save();
+      const savedOtp = await new OTP({ otp: otpSaved, email }).save();
       console.log("Saved OTP:", savedOtp);
 
       /***** otp sending ******/
@@ -62,7 +62,7 @@ const verifyOtpAndRegister = async (req, res) => {
     }
 
     // Check if OTP exists in the database for the given email
-    const otpRecord = await otp.findOne({ email });
+    const otpRecord = await OTP.findOne({ email });
 
     if (!otpRecord) {
       return res.status(400).json({ error: "OTP expired or not found." });
