@@ -3,6 +3,7 @@ import { Menu, X } from "lucide-react";
 import { useSelector, useDispatch } from "react-redux";
 import { isLoggedIn, selectUser, logout } from "../../features/auth/authSlice";
 import Cookies from "js-cookie";
+import { Link } from "react-router";
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -51,18 +52,18 @@ const Header = () => {
               </div>
             ) : (
               <div className="flex items-center space-x-4">
-                <a
-                  href="/login"
+                <Link
+                  to="/login"
                   className="rounded-full bg-blue-500 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-600"
                 >
                   Login
-                </a>
-                <a
-                  href="/register"
+                </Link>
+                <Link
+                  to="/register"
                   className="rounded-full bg-black px-4 py-2 text-sm font-semibold text-white hover:bg-gray-800"
                 >
                   Sign up
-                </a>
+                </Link>
               </div>
             )}
           </div>
