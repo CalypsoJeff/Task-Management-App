@@ -2,6 +2,7 @@ const express = require("express");
 const http = require("http");
 const session = require("express-session");
 const dotenv = require("dotenv");
+const MongoStore = require('connect-mongo');
 const database = require("./config/DB");
 const cors = require("cors");
 const userRoutes = require("./routes/userRoutes");
