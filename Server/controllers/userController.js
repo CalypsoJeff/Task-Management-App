@@ -32,7 +32,7 @@ const registerUser = async (req, res) => {
       const otpSaved = generateOTP();
       console.log("Generated OTP:", otpSaved);
       // req.session.otpUser = { ...UserData, otpSaved };
-      const savedOtp = await new otp({ otpSaved, email }).save();
+      const savedOtp = await new otp({ otp: otpSaved, email }).save();
       console.log("Saved OTP:", savedOtp);
 
       /***** otp sending ******/
@@ -54,8 +54,7 @@ const registerUser = async (req, res) => {
 const verifyOtpAndRegister = async (req, res) => {
   try {
     const { otp, email } = req.body;
-    console.log(req.body,"req.body");
-    
+    console.log(req.body, "req.body");
 
     // Validate input
     if (!otp || !email) {
