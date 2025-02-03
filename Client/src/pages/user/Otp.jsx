@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { otpVerification } from "../../api/endpoints/auth/user-auth";
-import { useNavigate } from "react-router";
+import { useLocation, useNavigate } from "react-router";
 import { toast } from "react-toastify";
 import "react-toastify/ReactToastify.css";
 import {useDispatch} from 'react-redux'
@@ -12,10 +12,10 @@ const Otp = () => {
   const navigate = useNavigate();
   const inputRefs = [useRef(), useRef(), useRef(), useRef()];
   const dispatch = useDispatch();
-  const email = navigate.location.state.email;
-  const phone = navigate.location.state.phone;
-  const name = navigate.location.state.name;
-  const password = navigate.location.state.password;
+  const location = useLocation();
+
+  // Extract data from the location state
+  const { email, phone, name, password } = location.state || {};
 
   const handleChange = (index, value) => {
     if (isNaN(value)) return;
