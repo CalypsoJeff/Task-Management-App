@@ -1,6 +1,6 @@
 import { io } from "socket.io-client";
 
-const socket = io("https://task-management-app-beryl-theta.vercel.app", {
+const socket = io("https://task-management-app-yreb.onrender.com", {
   withCredentials: true,
 });
 
