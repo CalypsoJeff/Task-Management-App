@@ -91,7 +91,7 @@ const verifyOtpAndRegister = async (req, res) => {
     const { token, refreshToken } = generateToken(name, email, "user");
 
     // Delete OTP record after successful verification
-    await otp.deleteOne({ email });
+    await OTP.deleteOne({ email });
 
     res.status(201).json({
       message: "Registration successful! Redirecting to home page.",
