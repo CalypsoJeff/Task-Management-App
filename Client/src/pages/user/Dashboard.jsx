@@ -39,11 +39,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const user = useSelector(selectUser);
   const userId = user._id;
-  if (!userId) {
-    navigate("/login");
-  } else {
-    navigate("/dashboard");
-  }
+  if (!userId) navigate("/login");
 
   const fetchTasks = useCallback(async () => {
     try {
