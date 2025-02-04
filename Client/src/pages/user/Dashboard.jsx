@@ -39,7 +39,13 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const user = useSelector(selectUser);
   const userId = user._id;
-  if (!userId) navigate("/login");
+  if (!user) navigate("/login");
+  useEffect(() => {
+    // Redirect to dashboard if the user is already logged in
+    if (user && user.token) {
+      navigate("/dashboard");
+    }
+  }, [navigate, user]);
 
   const fetchTasks = useCallback(async () => {
     try {
