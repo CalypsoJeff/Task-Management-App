@@ -10,10 +10,6 @@ const Header = () => {
   const user = useSelector(selectUser);
   const loggedIn = useSelector(isLoggedIn);
   const dispatch = useDispatch();
-
-  console.log(user, "#####");
-  console.log(loggedIn, "@@@@");
-
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
   };

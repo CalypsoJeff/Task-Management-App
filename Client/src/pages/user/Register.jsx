@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-// import { loginUser } from "../../api/services/auth/user-auth-service";
 import { registerUser } from "../../api/endpoints/auth/user-auth";
 import { useNavigate } from "react-router";
+import { toast } from "react-toastify";
+import "react-toastify/ReactToastify.css";
 
 export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -27,8 +28,12 @@ export default function RegisterPage() {
           password: data.password,
         },
       });
+      toast.success("Registration successful. Please verify your OTP.");
     } catch (error) {
       console.error("Error during registration:", error);
+      const errorMessage =
+        error.response?.data?.error || "An error occurred. Please try again.";
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
