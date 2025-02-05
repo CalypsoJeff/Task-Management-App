@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import "react-toastify/dist/ReactToastify.css";
 import { loginUser } from "../../api/endpoints/auth/user-auth";
-import { useDispatch } from "react-redux";
-import { login } from "../../features/auth/authSlice";
+import { useDispatch, useSelector } from "react-redux";
+import { login, selectUser } from "../../features/auth/authSlice";
 
 export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
@@ -16,6 +16,15 @@ export default function Login() {
   } = useForm();
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const user = useSelector(selectUser);
+  console.log(user);
+
+  useEffect(() => {
+    // Redirect to dashboard if the user is already logged in
+    if (user && user.token) {
+      navigate("/dashboard");
+    }
+  }, [navigate, user]);
 
   const onSubmit = async (data) => {
     setIsLoading(true);
