@@ -118,16 +118,11 @@ const login = async (req, res) => {
     }
     const user = await User.findOne({ email });
     if (!user) {
-      return res.status(400).json({ error: "Invalid email or password." });
+      return res.status(400).json({ error: "Invalid email or user doesn't exist." });
     }
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
       return res.status(400).json({ error: "Invalid email or password." });
-    }
-    if (user && user.is_blocked) {
-      return res
-        .status(400)
-        .json({ error: "User is blocked. Please contact support." });
     }
     const role = "user";
     const { token, refreshToken } = generateToken(user.name, user.email, role);
