@@ -24,12 +24,13 @@ const io = new Server(server, {
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
   },
+  transports: ['websocket', 'polling'],
 });
 app.use(
   cors({
     origin: "https://task-management-app-beryl-theta.vercel.app",
     // origin: "http://localhost:5173",
-    methods: "GET,POST,PUT,DELETE",
+    methods: ["GET", 'POST', 'PUT', "DELETE", 'OPTIONS'],
     credentials: true,
   })
 );
@@ -40,13 +41,6 @@ app.use((req, res, next) => {
 });
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
-// app.use(
-//   session({
-//     secret: process.env.SECRET,
-//     resave: true,
-//     saveUninitialized: true,
-//   })
-// );
 app.use(
   session({
     secret: process.env.SECRET,

@@ -14,6 +14,7 @@ const useSocket = () => {
       socket = io("https://task-management-app-yreb.onrender.com", {
         query: { userId: user._id },
         withCredentials: true,
+        transports: ["websocket", "polling"],
       });
 
       socket.on("connect", () => {
