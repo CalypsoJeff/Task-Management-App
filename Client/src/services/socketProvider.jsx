@@ -11,7 +11,7 @@ const useSocket = () => {
 
   useEffect(() => {
     if (user && user._id) {
-      socket = io("http://localhost:4848", {
+      socket = io("https://task-management-app-yreb.onrender.com", {
         query: { userId: user._id },
         withCredentials: true,
       });
