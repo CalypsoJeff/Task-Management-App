@@ -6,6 +6,7 @@ import Register from "../../pages/user/Register";
 import Otp from "../../pages/user/Otp";
 import Dashboard from "../../pages/user/Dashboard";
 import Dashboard2 from "../../pages/user/Dashboard2";
+import GroupTasks from "../../pages/user/GroupTasks";
 
 const UserRoutes = () => {
   return (
@@ -19,6 +20,8 @@ const UserRoutes = () => {
       <Route element={<UserPrivateRoutes />}>
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/dashboard2" element={<Dashboard2 />} />
+        <Route path="/groups" element={<GroupTasks />} />
+
       </Route>
     </Routes>
   );

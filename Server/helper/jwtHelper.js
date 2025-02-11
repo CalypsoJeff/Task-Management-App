@@ -9,13 +9,13 @@ const REFRESH_SECRET_KEY = process.env.REFRESH_SECRET_KEY
  * @param {string} role - The user's role.
  * @returns {Object} An object containing the access token and refresh token.
  */
-export const generateToken = (user, email, role) => {
+export const generateToken = (user,userId ,email, role) => {
   try {
-    const token = jwt.sign({ user, email, role }, SECRET_KEY, {
+    const token = jwt.sign({ user,userId ,email, role }, SECRET_KEY, {
       expiresIn: "2h",
     });
 
-    const refreshToken = jwt.sign({ user, email, role }, REFRESH_SECRET_KEY, {
+    const refreshToken = jwt.sign({ user,userId, email, role }, REFRESH_SECRET_KEY, {
       expiresIn: "5d",
     });
 

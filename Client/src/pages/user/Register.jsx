@@ -4,6 +4,8 @@ import { registerUser } from "../../api/endpoints/auth/user-auth";
 import { useNavigate } from "react-router";
 import { toast } from "react-toastify";
 import "react-toastify/ReactToastify.css";
+import TaskManagerPic from '../../assets/task Manager.jpg'
+
 
 export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -40,7 +42,10 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-black">
+    <div className="flex items-center justify-center min-h-screen bg-black"
+    style={{
+            backgroundImage: `url(${TaskManagerPic})`,
+        }}>
       <div className="w-full max-w-md bg-white rounded-lg shadow-md p-6">
         <h2 className="text-2xl font-bold text-center mb-4">Register</h2>
         <p className="text-center text-gray-600 mb-6">
@@ -177,18 +182,6 @@ export default function RegisterPage() {
             {isLoading ? "Please wait..." : "Register"}
           </button>
         </form>
-        <div className="mt-6">
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300"></div>
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-gray-500">
-                Or sign up with
-              </span>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );

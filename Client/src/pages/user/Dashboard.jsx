@@ -1,20 +1,20 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
-import { PlusCircle, LogOut } from "lucide-react";
+import { PlusCircle, LogOut, Users } from "lucide-react";
 import Modal from "react-modal";
 import Swal from "sweetalert2";
-import socket from "../../services/socketProvider";
-import {
-  createTask,
-  deleteTask,
-  taskList,
-  taskStatistics,
-  updateTask,
-} from "../../api/endpoints/auth/user-auth";
 import { useDispatch, useSelector } from "react-redux";
 import { logout, selectUser } from "../../features/auth/authSlice";
 import Cookies from "js-cookie";
 import { useNavigate } from "react-router";
 import TaskStatistics from "../../components/user/TaskStatistics";
+import {
+  createTask,
+  deleteTask,
+  taskList,
+  taskStatistics,
+  updateTask, createGroup
+} from "../../api/endpoints/auth/user-task";
+import useSocket from "../../services/socketProvider";
 
 const Dashboard = () => {
   const [tasks, setTasks] = useState([]);
@@ -25,7 +25,10 @@ const Dashboard = () => {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [sort, setSort] = useState("dueDate:asc");
   const [filters, setFilters] = useState({ priority: "", status: "" });
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
+  const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
+  const [newGroupName, setNewGroupName] = useState("");
+  // const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentTask, setCurrentTask] = useState(null);
   const [statistics, setStatistics] = useState([]);
   const [formData, setFormData] = useState({
@@ -34,18 +37,16 @@ const Dashboard = () => {
     priority: "Medium",
     dueDate: "",
   });
+  const { socket, isConnected } = useSocket();
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const user = useSelector(selectUser);
   const userId = user._id;
-  if (!user) navigate("/login");
+
   useEffect(() => {
-    // Redirect to dashboard if the user is already logged in
-    if (user) {
-      console.log("User is already logged in:", user);
-      navigate("/dashboard");
-    }
+    if (!user) navigate("/login");
+    else navigate("/dashboard");
   }, [navigate, user]);
 
   const fetchTasks = useCallback(async () => {
@@ -85,62 +86,81 @@ const Dashboard = () => {
   }, [fetchStatistics]);
 
   useEffect(() => {
+    if (!socket || !isConnected) return;
+
     const handleTaskAdded = (newTask) => {
       if (newTask.userId === userId) {
         setTasks((prevTasks) => {
-          // Avoid duplicate tasks
-          if (prevTasks.find((task) => task._id === newTask._id))
-            return prevTasks;
+          if (prevTasks.find((task) => task._id === newTask._id)) return prevTasks;
           return [...prevTasks, newTask];
         });
-        fetchStatistics(); // Fetch only if the task is relevant to the user
+        fetchStatistics();
       }
     };
 
     const handleTaskUpdated = (updatedTask) => {
       if (updatedTask.userId === userId) {
         setTasks((prevTasks) =>
-          prevTasks.map((task) =>
-            task._id === updatedTask._id ? updatedTask : task
-          )
+          prevTasks.map((task) => (task._id === updatedTask._id ? updatedTask : task))
         );
         fetchStatistics();
       }
     };
 
     const handleTaskDeleted = (deletedTaskId) => {
-      setTasks((prevTasks) =>
-        prevTasks.filter((task) => task._id !== deletedTaskId)
-      );
+      setTasks((prevTasks) => prevTasks.filter((task) => task._id !== deletedTaskId));
       fetchStatistics();
     };
 
-    // Register WebSocket events
     socket.on("taskAdded", handleTaskAdded);
     socket.on("taskUpdated", handleTaskUpdated);
     socket.on("taskDeleted", handleTaskDeleted);
 
-    // Cleanup all WebSocket events
     return () => {
       socket.off("taskAdded", handleTaskAdded);
       socket.off("taskUpdated", handleTaskUpdated);
       socket.off("taskDeleted", handleTaskDeleted);
     };
-  }, [fetchStatistics, userId]);
+  }, [socket, isConnected, fetchStatistics, userId]);
 
-  const openModal = (task = null) => {
+  const openTaskModal = (task = null) => {
     setCurrentTask(task);
     setFormData(
       task
         ? { ...task }
         : { title: "", status: "Pending", priority: "Medium", dueDate: "" }
     );
-    setIsModalOpen(true);
+    setIsTaskModalOpen(true);
   };
 
-  const closeModal = () => {
-    setIsModalOpen(false);
+  const closeTaskModal = () => {
+    setIsTaskModalOpen(false);
     setCurrentTask(null);
+  };
+
+  const openGroupModal = () => {
+    setIsGroupModalOpen(true);
+  };
+
+  const closeGroupModal = () => {
+    setIsGroupModalOpen(false);
+    setNewGroupName("");
+  };
+
+  const saveGroup = async () => {
+    if (!newGroupName.trim()) {
+      Swal.fire("Error!", "Group name is required.", "error");
+      return;
+    }
+
+    try {
+      await createGroup({ name: newGroupName });
+      Swal.fire("Success!", "Group created successfully!", "success");
+      closeGroupModal();
+    } catch (error) {
+      console.error("Error creating group:", error);
+      Swal.fire("Error!", "Failed to create group.", "error");
+    }
   };
 
   const handleInputChange = (e) => {
@@ -171,7 +191,7 @@ const Dashboard = () => {
         await createTask(userId, formData);
         Swal.fire("Success!", "Task added successfully!", "success");
       }
-      closeModal();
+      closeTaskModal();
     } catch (error) {
       console.error("Error saving task:", error);
       const errorMessage =
@@ -287,11 +307,24 @@ const Dashboard = () => {
                 className="border border-gray-300 rounded-md px-4 py-2 w-full sm:w-auto"
               />
               <button
-                onClick={() => openModal()}
+                onClick={() => openTaskModal()}
                 className="flex items-center px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors w-full sm:w-auto"
               >
                 <PlusCircle className="mr-2 h-4 w-4" /> Create Task
               </button>
+              <button
+                onClick={openGroupModal}
+                className="flex items-center px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors w-full sm:w-auto"
+              >
+                <PlusCircle className="mr-2 h-4 w-4" /> Create Group
+              </button>
+              <button
+                onClick={() => navigate("/groups")}
+                className="flex items-center px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors w-full sm:w-auto"
+              >
+                <Users className="mr-2 h-4 w-4" /> View Groups
+              </button>
+
               <button
                 onClick={handleLogout}
                 className="flex items-center px-4 py-2 border border-red-500 text-red-500 rounded-md hover:bg-red-50 transition-colors w-full sm:w-auto"
@@ -425,7 +458,7 @@ const Dashboard = () => {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                           <button
-                            onClick={() => openModal(task)}
+                            onClick={() => openTaskModal(task)}
                             className="text-indigo-600 hover:text-indigo-900 mr-2"
                           >
                             Edit
@@ -476,10 +509,10 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Modal */}
+        {/* Task Modal */}
         <Modal
-          isOpen={isModalOpen}
-          onRequestClose={closeModal}
+          isOpen={isTaskModalOpen}
+          onRequestClose={closeTaskModal}
           contentLabel="Task Modal"
           className="fixed inset-0 flex items-center justify-center"
           overlayClassName="fixed inset-0 bg-black bg-opacity-50"
@@ -557,7 +590,7 @@ const Dashboard = () => {
             </div>
             <div className="flex justify-end space-x-4 mt-6">
               <button
-                onClick={closeModal}
+                onClick={closeTaskModal}
                 className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
               >
                 Cancel
@@ -567,6 +600,39 @@ const Dashboard = () => {
                 className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
               >
                 {currentTask ? "Update Task" : "Create Task"}
+              </button>
+            </div>
+          </div>
+        </Modal>
+        {/* Group Modal */}
+        <Modal
+          isOpen={isGroupModalOpen}
+          onRequestClose={closeGroupModal}
+          contentLabel="Group Modal"
+          className="fixed inset-0 flex items-center justify-center"
+          overlayClassName="fixed inset-0 bg-black bg-opacity-50"
+        >
+          <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md mx-4">
+            <h2 className="text-xl font-semibold mb-6">Create Group</h2>
+            <input
+              type="text"
+              placeholder="Enter group name"
+              value={newGroupName}
+              onChange={(e) => setNewGroupName(e.target.value)}
+              className="w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-green-500 focus:border-transparent mb-4"
+            />
+            <div className="flex justify-end space-x-4">
+              <button
+                onClick={closeGroupModal}
+                className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={saveGroup}
+                className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors"
+              >
+                Create Group
               </button>
             </div>
           </div>

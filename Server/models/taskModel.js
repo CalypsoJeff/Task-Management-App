@@ -30,6 +30,11 @@ const taskSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
+    groupId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Group",
+      required: false,
+    },
     createdAt: {
       type: Date,
       default: Date.now,

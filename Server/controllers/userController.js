@@ -1,6 +1,6 @@
 const bcrypt = require("bcrypt");
 const User = require("../models/userModel");
-const   OTP = require("../models/otpModel");
+const OTP = require("../models/otpModel");
 const { generateToken } = require("../helper/jwtHelper");
 const { generateOTP, sendOtp } = require("../utility/nodeMailer");
 // Register User and Send OTP
@@ -88,7 +88,7 @@ const verifyOtpAndRegister = async (req, res) => {
     await newUser.save();
 
     // Generate tokens
-    const { token, refreshToken } = generateToken(name, email, "user");
+    const { token, refreshToken } = generateToken(name, newUser._id, email, "user");
 
     // Delete OTP record after successful verification
     await OTP.deleteOne({ email });
@@ -125,7 +125,7 @@ const login = async (req, res) => {
       return res.status(400).json({ error: "Invalid email or password." });
     }
     const role = "user";
-    const { token, refreshToken } = generateToken(user.name, user.email, role);
+    const { token, refreshToken } = generateToken(user.name, user._id, user.email, role);
     const { password: _, ...userWithoutPassword } = user._doc;
     res.status(200).json({
       status: "success",

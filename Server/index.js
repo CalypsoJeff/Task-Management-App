@@ -18,14 +18,17 @@ const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: "https://task-management-app-beryl-theta.vercel.app",
+    // origin: "https://task-management-app-beryl-theta.vercel.app",
+    origin: "http://localhost:5173",
+
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
   },
 });
 app.use(
   cors({
-    origin: "https://task-management-app-beryl-theta.vercel.app",
+    // origin: "https://task-management-app-beryl-theta.vercel.app",
+    origin: "http://localhost:5173",
     methods: "GET,POST,PUT,DELETE",
     credentials: true,
   })
@@ -53,7 +56,7 @@ app.use(
       mongoUrl: process.env.MONGO_URL,
       ttl: 3600, // 1 hour expiration time
     }),
-    cookie: { secure: false, maxAge: 3600000 }, 
+    cookie: { secure: false, maxAge: 3600000 },
   })
 );
 app.options("*", cors());
@@ -62,11 +65,20 @@ app.use((req, res, next) => {
   next();
 });
 io.on("connection", (socket) => {
-  console.log("New client connected:", socket.id);
+  const userId = socket.handshake.query.userId;
+
+  if (userId) {
+    socket.join(userId); // Join the user to their unique room
+    console.log(`User ${userId} connected`);
+  } else {
+    console.log(`Socket ${socket.id} connected without a userId`);
+  }
+
   socket.on("disconnect", () => {
-    console.log("Client disconnected:", socket.id);
+    console.log(`User ${userId} disconnected`);
   });
 });
+
 
 app.use((req, res, next) => {
   req.io = io;

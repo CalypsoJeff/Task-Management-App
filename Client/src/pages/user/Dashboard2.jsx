@@ -2,19 +2,19 @@ import { useEffect, useState, useCallback, useMemo } from "react";
 import { PlusCircle, LogOut } from "lucide-react";
 import Modal from "react-modal";
 import Swal from "sweetalert2";
-import socket from "../../services/socketProvider";
 import {
   createTask,
   deleteTask,
   taskList,
   taskStatistics,
   updateTask,
-} from "../../api/endpoints/auth/user-auth";
+} from "../../api/endpoints/auth/user-task";
 import { useDispatch, useSelector } from "react-redux";
 import { logout, selectUser } from "../../features/auth/authSlice";
 import Cookies from "js-cookie";
 import { useNavigate } from "react-router";
 import TaskStatistics2 from "../../components/user/TaskStatistics2";
+import useSocket from "../../services/socketProvider";
 
 const Dashboard = () => {
   const [tasks, setTasks] = useState([]);
@@ -34,6 +34,9 @@ const Dashboard = () => {
     priority: "Medium",
     dueDate: "",
   });
+  const { socket, isConnected } = useSocket();
+
+
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -76,11 +79,12 @@ const Dashboard = () => {
   }, [fetchStatistics]);
 
   useEffect(() => {
+    if (!socket || !isConnected) return;
+
     const handleTaskAdded = (newTask) => {
       if (newTask.userId === userId) {
         setTasks((prevTasks) => {
-          if (prevTasks.find((task) => task._id === newTask._id))
-            return prevTasks;
+          if (prevTasks.find((task) => task._id === newTask._id)) return prevTasks;
           return [...prevTasks, newTask];
         });
         fetchStatistics();
@@ -90,18 +94,14 @@ const Dashboard = () => {
     const handleTaskUpdated = (updatedTask) => {
       if (updatedTask.userId === userId) {
         setTasks((prevTasks) =>
-          prevTasks.map((task) =>
-            task._id === updatedTask._id ? updatedTask : task
-          )
+          prevTasks.map((task) => (task._id === updatedTask._id ? updatedTask : task))
         );
         fetchStatistics();
       }
     };
 
     const handleTaskDeleted = (deletedTaskId) => {
-      setTasks((prevTasks) =>
-        prevTasks.filter((task) => task._id !== deletedTaskId)
-      );
+      setTasks((prevTasks) => prevTasks.filter((task) => task._id !== deletedTaskId));
       fetchStatistics();
     };
 
@@ -114,7 +114,7 @@ const Dashboard = () => {
       socket.off("taskUpdated", handleTaskUpdated);
       socket.off("taskDeleted", handleTaskDeleted);
     };
-  }, [fetchStatistics, userId]);
+  }, [socket, isConnected, fetchStatistics, userId]);
 
   const openModal = (task = null) => {
     setCurrentTask(task);

@@ -1,19 +1,43 @@
 import { io } from "socket.io-client";
+import { useSelector } from "react-redux";
+import { selectUser } from "../features/auth/authSlice";
+import { useEffect, useState } from "react";
 
-const socket = io("https://task-management-app-yreb.onrender.com", {
-  withCredentials: true,
-});
+let socket;
 
-socket.on("connect", () => {
-  console.log("Connected to Socket.IO server:", socket.id);
-});
+const useSocket = () => {
+  const user = useSelector(selectUser);
+  const [isConnected, setIsConnected] = useState(false);
 
-socket.on("connect_error", (error) => {
-  console.error("Socket.IO connection error:", error.message);
-});
+  useEffect(() => {
+    if (user && user._id) {
+      socket = io("http://localhost:4848", {
+        query: { userId: user._id },
+        withCredentials: true,
+      });
 
-socket.on("disconnect", (reason) => {
-  console.warn("Socket.IO disconnected:", reason);
-});
+      socket.on("connect", () => {
+        console.log("Connected to Socket.IO server:", socket.id);
+        setIsConnected(true);
+      });
 
-export default socket;
+      socket.on("connect_error", (error) => {
+        console.error("Socket.IO connection error:", error.message);
+      });
+
+      socket.on("disconnect", (reason) => {
+        console.warn("Socket.IO disconnected:", reason);
+        setIsConnected(false);
+      });
+
+      // Clean up the socket connection
+      return () => {
+        socket.disconnect();
+      };
+    }
+  }, [user]);
+
+  return { socket, isConnected };
+};
+
+export default useSocket;
