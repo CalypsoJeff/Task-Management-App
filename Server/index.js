@@ -18,8 +18,8 @@ const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
-    // origin: "https://task-management-app-beryl-theta.vercel.app",
-    origin: "http://localhost:5173",
+    origin: "https://task-management-app-beryl-theta.vercel.app",
+    // origin: "http://localhost:5173",
 
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
@@ -27,8 +27,8 @@ const io = new Server(server, {
 });
 app.use(
   cors({
-    // origin: "https://task-management-app-beryl-theta.vercel.app",
-    origin: "http://localhost:5173",
+    origin: "https://task-management-app-beryl-theta.vercel.app",
+    // origin: "http://localhost:5173",
     methods: "GET,POST,PUT,DELETE",
     credentials: true,
   })
